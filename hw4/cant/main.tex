@@ -1,0 +1,118 @@
+\documentclass[11pt, twocolumn]{article}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{lipsum}
+\usepackage{listings}
+\geometry{a4paper, left=1in, right=1in, top=1in, bottom=1in}
+
+\title{CUDA Implementation of Sparse Matrix-Vector Product}
+\author{Navya Swetha Daggubati}
+\date{December 1 2023}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+The assignment explores the implementation and optimization of sparse matrix operations using the CUDA programming model. The work includes the conversion of matrices from Compressed Sparse Row (CSR) format to Ellpack (ELL) format, memory allocation on the GPU for both formats, and a CUDA kernel for Sparse Matrix-Vector Product (SPMV) using CSR format. Each component contributes to accelerating sparse matrix computations, with a focus on parallelism and reduction techniques.
+
+The \texttt{convert\_csr\_to\_ell} function establishes the groundwork for transforming a matrix from CSR to ELL format. The \texttt{allocate\_ell\_gpu} and \texttt{allocate\_csr\_gpu} functions allocate GPU memory for ELL and CSR formats, laying the foundation for GPU-accelerated computations. The \texttt{spmv\_kernel} CUDA kernel embodies parallelism, efficiently computing the Sparse Matrix-Vector Product using CSR format. It utilizes warp-level parallelism, shared memory, and inter-warp reduction to exploit the GPU's capabilities fully.
+
+\section{Methodology}
+
+\textbf{\textit{convert\_csr\_to\_ell}:} 
+The\texttt{convert\_csr\_to\_ell} function transforms a sparse matrix from Compressed Sparse Row (CSR) to Ellpack (ELL) format on the CPU. Initially, it determines the maximum number of nonzeros in any row of the CSR matrix. The function then allocates memory for the ELL format, initializing it with dummy values. Subsequently, it copies data from the CSR matrix to the ELL format, maintaining the original data integrity. This process ensures a well-structured ELL format for efficient parallel processing on a GPU.
+
+\textbf{\textit{allocate\_csr\_gpu}}: 
+The \texttt{allocate\_csr\_gpu} function is integral to establishing an efficient environment for parallel computations on the GPU. It begins by allocating device memory on the GPU using CUDA functions like \texttt{cudaMalloc} for the Compressed Sparse Row (CSR) matrix's essential components—row pointers, column indices, values, as well as input and output vectors. This allocation forms the foundation for optimized GPU processing.
+
+Following memory allocation, the function determines the crucial transfer of host data, including CSR matrix details and the input vector, from the CPU to the allocated GPU memory. This step ensures that the necessary data resides on the GPU, poised for subsequent parallel processing tasks.
+
+Moreover, the function takes a proactive approach by initializing the output vector on the GPU to zero using \texttt{cudaMemset}. This strategic initialization ensures a clean starting point for the output vector, representing the computation result, before any GPU calculations commence. In essence, the \texttt{allocate\_csr\_gpu} function serves as a foundational step, facilitating a seamless data transition and preparing the GPU environment for efficient parallel computations.
+
+\textbf{\textit{spmv\_kernel}:} 
+The \texttt{spmv\_kernel} function is a CUDA kernel designed for Sparse Matrix-Vector Product (SpMV) using the Compressed Sparse Row (CSR) format. This kernel is intended to be called from the \texttt{spmv\_gpu} function.
+
+The kernel follows a structured approach to efficiently perform the SpMV operation. It begins by identifying the current thread block's corresponding row in the matrix. Next, it determines the start and end indices for the non-zero elements in that row. The actual computation of the dot product is carried out using thread parallelism, with each thread handling a portion of the non-zero elements.
+
+To optimize performance, the kernel employs parallel reduction within each warp to obtain the final dot product for the row. Additionally, shared memory is utilized to store partial sums for inter-warp reduction, enhancing cooperation between threads. The final inter-warp reduction step ensures the correct computation of the dot product across all threads within a block.
+
+The result is then stored in the output vector \texttt{b}. Overall, the \texttt{spmv\_kernel} function showcases effective utilization of GPU parallelism, shared memory, and reduction techniques to perform the SpMV operation on matrices in CSR format.
+
+\textbf{\textit{allocate\_ell\_gpu}:}
+
+The \texttt{allocate\_ell\_gpu} function is designed to allocate memory for the Ellpack (ELL) data structure on the GPU and copy essential data from the CPU to the GPU for execution. This function is critical for setting up the GPU environment, ensuring that it is ready for efficient parallel computations using the ELL format. Key functionalities of the function include memory allocation for the ELL matrix's column indices, values, input vector, and output vector on the GPU using CUDA's \texttt{cudaMalloc} functions. Subsequently, the function transfers host data, including ELL matrix column indices, values, and the input vector, from the CPU to the allocated device memory on the GPU. This data transfer step is essential in preparing the GPU for subsequent parallel processing tasks. Additionally, the function initializes the output vector on the device to zero using \texttt{cudaMemset}. This step ensures a clean starting point for the output vector before any GPU calculations commence.
+
+\textbf{\textit{spmv\_kernel\_ell}:}
+
+The \texttt{spmv\_kernel\_ell} function serves as the ELL (Ellpack) Sparse Matrix-Vector Product (SpMV) kernel on the GPU. This function is designed to be invoked from the \texttt{spmv\_gpu\_ell} function, which has already been implemented. The primary purpose of this kernel is to efficiently compute the SpMV operation using the Ellpack format. Key features of the function include the identification of the row index for the current thread block, determination of the thread ID within the block, and calculation of the number of threads per row. The kernel utilizes thread parallelism to iterate through the non-zero elements of the ELL matrix, performing multiplication and accumulating results for the current row. To optimize performance, shared memory is employed to store partial sums for parallel reduction. The function concludes with parallel reduction steps to obtain the final dot product for the row, and the result is stored in the output vector 'b'.
+
+\section{Results}
+
+
+\begin{itemize}
+  \item \textbf{Matrix Information:}
+    \begin{itemize}
+      \item Matrix loaded from \texttt{"cant/cant.mtx"} with dimensions $62451 \times 62451$ and 2034917 non-zeros.
+      \item Sparse, real, and symmetric matrix.
+    \end{itemize}
+  
+  \item \textbf{Conversion and Loading:}
+    \begin{itemize}
+      \item Symmetric matrix expanded to 4007383 non-zeros.
+      \item COO to CSR conversion: Done.
+    \end{itemize}
+  
+  \item \textbf{Vector Information:}
+    \begin{itemize}
+      \item Vector loaded from \texttt{"cant/b.mtx"}.
+    \end{itemize}
+  
+  \item \textbf{Execution Summary:}
+    \begin{itemize}
+      \item Matrix is loaded and identified as a sparse, real, and symmetric matrix of size $62451 \times 62451$.
+      \item The matrix is expanded, resulting in a total of 4007383 non-zeros.
+      \item COO to CSR conversion is successfully completed.
+      \item A vector is loaded from the file \texttt{"cant/b.mtx"}.
+      \item GPU CSR SpMV execution time (per iteration): 0.00006874 s.
+      \item Pinned Host to Device bandwidth: 2.047037 GB/s.
+      \item GPU ELL SpMV execution time (per iteration): 0.30350563 s.
+      \item Pinned Host to Device bandwidth: 1.518750 GB/s.
+      \item CPU CSR SpMV calculation: Done.
+      \item 2-Norm between CPU and GPU answers: $4.806907 \times 10^5$.
+      \item Result saved to \texttt{"./test.mtx"}.
+    \end{itemize}
+\end{itemize}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+    \hline
+    Module & Time (s)  \\
+    \hline
+    Load & 0.703632  \\
+    Convert & 0.026803  \\
+    CPU SpMV & 0.023259  \\
+    GPU Alloc & 0.376119  \\
+    GPU SpMV & 0.006917  \\
+    GPU ELL SpMV & 30.348604  \\
+    Store & 0.016864 \\
+    
+    \hline
+    \end{tabular}
+    \caption{Performance with Threads=28}
+\end{table}
+
+\section{Conclusion}
+
+
+\section{Conclusion}
+
+The experimental results highlight notable differences in the performance of Sparse Matrix-Vector Product (SpMV) computations between Compressed Sparse Row (CSR) and Ellpack (ELL) formats on a GPU. The GPU CSR SpMV execution outperforms the GPU ELL SpMV, demonstrating significantly lower execution time (0.00006874 seconds per iteration) and higher Pinned Host to Device bandwidth (2.047037 GB/s) compared to ELL SpMV (0.30350563 seconds per iteration and 1.518750 GB/s). The trade-offs between these formats become evident, with CSR excelling in terms of speed and bandwidth, while ELL, though still efficient, exhibits slightly slower performance. These results underscore the importance of carefully selecting sparse matrix representations based on the specific requirements and characteristics of the computation and hardware infrastructure.
+
+
+
+
+\end{document}
