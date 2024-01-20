@@ -1,0 +1,26 @@
+#!/bin/bash
+#SBATCH --account=cis431_531         ### Your 'charge' account
+#SBATCH --partition=short            ### Queue to submit to
+#SBATCH --job-name=navya_hw3         ### Job name
+#SBATCH --output=output/test_%A.out  ### File in which to store job stdout
+#SBATCH --error=output/test_%A.err   ### File in which to store job stderr
+#SBATCH --time=1                     ### Wall-clock time limit, in minutes
+#SBATCH --mem=64000M                 ### Memory limit per node
+#SBATCH --nodes=1                    ### Number of Nodes
+#SBATCH --ntasks-per-node=1          ### Number of tasks (MPI processes)
+#SBATCH --cpus-per-task=14           ### Number of threads per task (OMP threads)
+
+# Export OMP_NUM_THREADS
+export OMP_NUM_THREADS=56
+
+
+# Compile Sparse Matrix Vector Multiplication
+ gcc -o out main.c mmio.c common.c -fopenmp -lm
+
+# Run  ./out1 cant/cant.mtx cant/b.mtx ./myans.mtx
+ 
+
+
+
+
+

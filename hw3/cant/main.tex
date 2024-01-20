@@ -1,0 +1,131 @@
+\documentclass[11pt, twocolumn]{article}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{lipsum}
+\usepackage{listings}
+\geometry{a4paper, left=1in, right=1in, top=1in, bottom=1in}
+
+\title{Parallel Sparse Matrix-Vector Multiplication }
+\author{Navya Swetha Daggubati}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+The assignment focuses on implementing and testing Sparse Matrix-Vector Multiplication (SpMV) functions in both serial and parallel versions using Coordinate (COO) and Compressed Sparse Row (CSR) formats. The provided functions include conversion between formats and parallel computation using OpenMP. The 'cant' matrix is used for testing, with attention to 0-indexing and result verification against a provided answer. A performance analysis compares parallel and serial implementations. 
+
+\section{Methodology}
+
+ \textbf{Converting COO format to CSR format:} The \texttt{convert\_coo\_to\_csr} function transforms a matrix from Coordinate (COO) format to Compressed Sparse Row (CSR) format. It involves allocating memory for CSR arrays (\texttt{*csr\_row\_ptr}, \texttt{*csr\_col\_ind}, and \texttt{*csr\_vals}), initializing row pointers to zero, counting non-zero elements in each row to determine pointers, computing starting indices, filling CSR arrays with column indices and values based on COO input, and resetting row pointers. 
+ \vspace{7pt}
+\\
+\textbf{SpMV(COO) parallel using OpenMP:} The SpMV calculation in parallel using OpenMP with the COO format, as implemented in the \texttt{spmv\_coo} function, involves memory allocation for a \texttt{partial\_sums} array initialized in parallel. A parallelized loop processes non-zero elements of the COO format, updating partial sums atomically based on element-wise products. To ensure thread safety during result vector updates, another parallelized loop employs OpenMP locks from the \texttt{writelock} array. This methodology optimizes OpenMP parallelization for efficient SpMV computation, prioritizing memory management, parallelized loops, and thread safety.
+\vspace{7pt}
+\\
+\textbf{SpMV(CSR) parallel using OpenMP:} Sparse Matrix-Vector Multiplication (SpMV) using the Compressed Sparse Row (CSR) format in parallel with OpenMP, implemented in the \texttt{spmv} function, involves parallelized iterations through matrix rows. It computes the sum of element-wise products between non-zero values and corresponding vector elements. This approach emphasizes efficient OpenMP parallelization, ensuring thread-safe result vector updates through atomic operations. 
+\vspace{7pt}
+\\
+\textbf{Serial implementation of SpMV(COO):} The \texttt{spmv\_coo\_serial} function provides a straightforward implementation of Sparse Matrix-Vector Multiplication (SpMV) using the Coordinate (COO) format. It sequentially iterates through the non-zero elements of the COO matrix, adjusting indices for 0-based referencing, and computes the element-wise product with the vector. The resulting products are accumulated in the result vector in a serialized manner. This serial implementation provides a clear and sequential approach to SpMV computation, serves as a baseline for performance comparison with parallelized versions.
+\vspace{7pt}
+\\
+\textbf{Serial implementation of SpMV(CSR):} The \texttt{spmv\_serial} function represents the serial version of Sparse Matrix-Vector Multiplication (SpMV) using the Compressed Sparse Row (CSR) format. It iterates through the rows of the CSR matrix, calculating the sum of element-wise products between non-zero values and corresponding vector elements. 
+
+
+
+\section{Results}
+
+\begin{itemize}
+  \item \textbf{Matrix Information:}
+    \begin{itemize}
+      \item Matrix loaded from "cant/cant.mtx" with dimensions 62451 x 62451 and 2034917 non-zeros.
+      \item Sparse, real, and symmetric matrix.
+    \end{itemize}
+  
+  \item \textbf{Conversion and Loading:}
+    \begin{itemize}
+      \item Symmetric matrix expanded to 4007383 non-zeros.
+      \item COO to CSR conversion: Done.
+    \end{itemize}
+  
+  \item \textbf{Vector Information:}
+    \begin{itemize}
+      \item Vector loaded from "cant/b.mtx."
+    \end{itemize}
+  
+  \item \textbf{Execution Summary:}
+    \begin{itemize}
+      \item Matrix is loaded and identified as a sparse, real, and symmetric matrix of size 62451 x 62451.
+      \item The matrix is expanded, resulting in a total of 4007383 non-zeros.
+      \item COO to CSR conversion is successfully completed.
+      \item A vector is loaded from the file "cant/b.mtx."
+    \end{itemize}
+  
+\end{itemize}
+
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+    \hline
+    Module & Time (s)  \\
+    \hline
+    Load & 1.125904  \\
+    Convert & 0.068108  \\
+    Lock Init & 0.000322  \\
+    COO SpMV Parallel & 1.416157  \\
+    CSR SpMV Parallel & 0.489196  \\
+    COO SpMV Serial & 2.266446  \\
+    CSR SpMV Serial & 1.729622  \\
+    Store & 0.113914 \\
+    
+    \hline
+    \end{tabular}
+    \caption{Performance}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+    \hline
+    Module & Time (s)  \\
+    \hline
+    Load & 1.137853  \\
+    Convert & 0.071089  \\
+    Lock Init & 0.000303  \\
+    COO SpMV Parallel & 1.383825  \\
+    CSR SpMV Parallel & 0.469980  \\
+    COO SpMV Serial & 2.286363  \\
+    CSR SpMV Serial & 0.114834  \\
+    Store & 0.113914 \\
+    
+    \hline
+    \end{tabular}
+    \caption{Performance with Threads = 56}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+    \hline
+    Module & Time (s)  \\
+    \hline
+    Load & 1.121399  \\
+    Convert & 0.066884 \\
+    Lock Init & 0.000298  \\
+    COO SpMV Parallel & 0.293336  \\
+    CSR SpMV Parallel & 0.109990  \\
+    COO SpMV Serial & 2.300716  \\
+    CSR SpMV Serial & 1.737427  \\
+    Store & 0.113280 \\
+    
+    \hline
+    \end{tabular}
+    \caption{Performance with Threads = 30}
+\end{table}
+
+\section{Conclusion}
+The program's performance analysis reveals varying effects of thread parallelization on different modules. Notably, the "COO SpMV Parallel" and "CSR SpMV Parallel" modules benefit significantly from increased threads, suggesting successful parallelization. In contrast, the "COO SpMV Serial" and "CSR SpMV Serial" modules show either minimal improvement or increased times with higher thread counts, indicating potential overhead or limited gains. 
+\end{document}
+
