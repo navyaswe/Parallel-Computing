@@ -1,0 +1,50 @@
+#!/bin/bash
+#SBATCH --account=cis431_531         ### Your 'charge' account
+#SBATCH --partition=short            ### Queue to submit to
+#SBATCH --job-name=my_test           ### Job name
+#SBATCH --output=output/test_%A.out  ### File in which to store job stdout
+#SBATCH --error=output/test_%A.err   ### File in which to store job stderr
+#SBATCH --time=1                     ### Wall-clock time limit, in minutes
+#SBATCH --mem=64000M                 ### Memory limit per node
+#SBATCH --nodes=1                    ### Number of Nodes
+#SBATCH --ntasks-per-node=1          ### Number of tasks (MPI processes)
+#SBATCH --cpus-per-task=14           ### Number of threads per task (OMP threads)
+
+
+export OMP_NUM_THREADS=56
+
+NUM_RUNS=20  
+GUESS_NUM=100000000
+sum=0.0
+
+# Compile PI.c
+gcc -o PI PI.c common.c -fopenmp -lm
+
+# Run ./PI NUM_RUNS times to calculate the average
+for ((i=1; i<=NUM_RUNS; i++)); do
+    ./PI 100000000
+done
+
+
+# Get the single filename that ends with ".out" present in the "output" folder
+output_file=$(find output -name "*.out" | head -n 1)
+
+if [ -z "$output_file" ]; then
+    echo "No .out file found in the 'output' directory."
+    exit 1
+fi
+
+# Traverse through each line in the output file
+while read -r line; do
+    # Assuming that the pi estimation is present on each line as "Pi is <value>"
+    pi_value=$(echo "$line" | awk '/Pi is/ {print $3}')
+    if [ -n "$pi_value" ]; then
+        sum=$(echo "$sum + $pi_value" | bc -l)
+    fi
+done < "$output_file"
+
+# Calculate the average
+average=$(echo "$sum / $NUM_RUNS" | bc -l)
+
+# Print the average Pi value
+echo "Average of Pi Estimations: $average"
