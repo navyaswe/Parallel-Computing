@@ -1,0 +1,116 @@
+\documentclass[11pt, twocolumn]{article}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{lipsum}
+
+\geometry{a4paper, left=1in, right=1in, top=1in, bottom=1in}
+
+\title{Parallel Pi Calculation and Performance Analysis}
+\author{Navya Swetha Daggubati}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This report presents the results of parallel Pi calculation using different methods and explores the impact of various parameters on the computation time and accuracy. This illustrates implementing parallelization with OpenMP for both the integration and Monte Carlo methods, compared their performance, and experimented with the number of threads, steps (slices), and guesses to optimize the calculation. Also compared the use of critical sections, atomic operations in the parallel code and the Monte Carlo method. The results demonstrate the advantages of parallelization and the trade-offs between accuracy and computation time.
+\end{abstract}
+
+\section{Introduction}
+In this assignment, the goal is to explore the parallel calculation of mathematical constant Pi using various methods and techniques. The primary objectives of this assignment is to understand the principles of parallel computing, particularly in the context of numerical integration and Monte Carlo simulations, and to evaluate the performance of different parallelization strategies. The assignment also focuses on gaining insights into the impact of parallelism on the accuracy and efficiency of pi approximation.
+\section{Methodology}
+
+ \textbf{Serial Calculation:} Find an approximation of pi by numerically calculating the integral $\int_{0}^{1} \frac{4}{1 + x^2} \, dx$ in the interval [0, 1]. The integral of this function within the interval [0, 1] corresponds to the area under the curve, which is used to approximate pi. For each subinterval, the midpoint of the base of the rectangle is calculated. The midpoint is represented as $x$ and is given by $(i+0.5) \times \Delta x$, where $i$ is the index of the current subinterval. The area of each rectangle is calculated using the formula $\frac{4}{1 + x^2}$. The areas of all the rectangles are summed up, approximating the integral of the function over the interval [0, 1].
+ \\
+ \textbf{Parallel Calculation with Critical Section (OpenMP):} In this parallel method with critical section, the `omp critical` directive ensures that only one thread can access and update the 'pi' variable at a time, preventing conflicts. The integration process remains similar to the serial calculation, dividing the interval [0, 1] into subintervals and approximating the area under the curve using rectangles. After parallel computation, results are consolidated to yield the final 'pi' approximation. This approach optimizes parallel processing while maintaining result accuracy.
+ \\
+\textbf{Parallel Calculation with Atomic operations (OpenMP):} In this parallel method, OpenMP directives enable distributed computation of pi among multiple threads while maintaining data integrity. The approach parallels previous methods, dividing the [0, 1] interval into subintervals, each representing a rectangle for approximating the area under the curve. The implementation harnesses the power of parallel processing through OpenMP's `omp atomic` directive, efficiently assigning subintervals to threads for concurrent processing.
+\\
+\textbf{Monte Carlo Method:} This method employs a probabilistic approach to estimate the value of pi. It simulates random points within the unit square and calculates the proportion that falls inside the quarter circle. Each thread generates its unique random seed, ensuring independence. The number of points falling inside the quarter circle is tallied, and the total count is used to approximate pi using formula $\frac{4.points}{num_steps}$ . This method leverages OpenMP directives for parallelization, allowing for concurrent point generation and calculation. The reduction clause ensures accurate aggregation of points from multiple threads.
+
+
+\section{Results}
+In the following experiments, the results of the parallel Pi calculation methods are illustrated below. The impact of varying the number of threads, steps (slices), and guesses on both the computation time and the accuracy of our approximations. The experiments reveal valuable insights into the trade-offs between parallelism, precision, and efficiency.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+    \hline
+    Method & Time (s) & Pi Value \\
+    \hline
+    Serial Calculation & 0.0018 & 3.1415926536 \\
+    OpenMP Critical & 0.0177 & 3.1415926536 \\
+    OpenMP Atomic & 0.0073 & 3.1415926536 \\
+    Monte Carlo & 0.0002 & 3.1441333333 \\
+    \hline
+    \end{tabular}
+    \caption{Time and Pi values with threads=10 and steps=150000}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+    \hline
+    Method & Time (s) & Pi Value \\
+    \hline
+    Serial Calculation & 0.0010 & 3.1415926536 \\
+    OpenMP Critical & 0.0150 & 3.1415926536 \\
+    OpenMP Atomic & 0.0055 & 3.1415926536 \\
+    Monte Carlo & 0.0001 & 3.1398400000 \\
+    \hline
+    \end{tabular}
+    \caption{Time and Pi values with threads=15 and steps=100000}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+    \hline
+    Method & Time (s) & Pi Value \\
+    \hline
+    Serial Calculation & 0.0024 & 3.1415926536 \\
+    OpenMP Critical & 0.0316 & 3.1415926536 \\
+    OpenMP Atomic & 0.0108 & 3.1415926536 \\
+    Monte Carlo & 0.0002 & 3.141600000 \\
+    \hline
+    \end{tabular}
+    \caption{Time and Pi values with threads=16 and steps=200000}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+    \hline
+    Method & Time (s) & Pi Value \\
+    \hline
+    Serial Calculation & 0.0035 & 3.1415926536 \\
+    OpenMP Critical & 0.0704 & 3.1415926536 \\
+    OpenMP Atomic & 0.0156 & 3.1415926536 \\
+    Monte Carlo & 0.0003 & 3.1396266667 \\
+    \hline
+    \end{tabular}
+    \caption{Time and Pi values with threads=30 and steps=300000}
+\end{table}
+
+\section{Analysis}
+As the number of threads increases, parallelization improves computation time, but there's also an increase in the risk of conflicts or overhead due to synchronization mechanisms.
+
+\begin{itemize}
+    \item The accuracy of Pi remains consistent, but the computation time is notably slower, especially when the number of steps is high in serial computation.
+\end{itemize}
+\begin{itemize}
+    \item OpenMP Atomic outperforms OpenMP Critical in terms of computation time while maintaining the same Pi value.OpenMP Critical may have some overhead due to critical section synchronization, especially when there are many threads and steps.
+\end{itemize}
+\begin{itemize}
+    \item The accuracy of the estimate improves with more points. While Monte Carlo provides good approximations of Pi, it may have slightly less accuracy compared to the other methods that consistently produce the standard Pi value.
+\end{itemize}
+\begin{itemize}
+    \item Average value of pi by run the code 20 times within a batch file is 3.141506062000000.
+\end{itemize}
+
+\section{Conclusion}
+For fast approximations, the Monte Carlo method is a good choice for parallelization but yields less accuracy. OpenMP Atomic provides a good trade-off between accuracy and computation time in comparison to OpenMP Critical.
+
+\end{document}
+
