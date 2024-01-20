@@ -1,0 +1,74 @@
+\documentclass[11pt, twocolumn]{article}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{algorithm}
+\usepackage{algpseudocode} 
+\usepackage{amsmath}
+\usepackage{lipsum}
+
+\geometry{a4paper, left=1in, right=1in, top=1in, bottom=1in}
+
+\title{Prefix Sum Calculation and Performance Analysis}
+\author{Navya Swetha Daggubati}
+\date{November 2, 2023}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+In this project, the goal is to implement two parallel versions to calculate the prefix sum. One of these versions uses an O($N \log N$) algorithm, and the other uses an O($N$) algorithm. Additionally, the parallel prefix sum code assesses its performance under various conditions, such as different numbers of threads. This helps to understand how well the parallel algorithms scale and perform in a multi-threaded environment.
+
+\section{Serial Prefix Sum}
+It accumulates elements in an array as follows:
+\begin{algorithmic}
+\For{$i = 1$ to $N$}
+  \State $prefix\_sum[i] \gets prefix\_sum[i-1] + array[i]$
+\EndFor
+\end{algorithmic}
+\section{Parallel Prefix Sum Algorithms}
+\textbf{Using NlogN Algorithm:} A parallel prefix sum algorithm using a tree-based reduction and distribution method. The key idea is to divide the array into segments, compute local prefix sums for each segment, and then combine these local results in a tree-like structure to calculate the final prefix sums.
+ \\
+\textbf{Using 2(N-1) Algorithm:} The algorithm is divided into two phases:
+a)Parallel Reduction: Each thread computes the local prefix sum for its part of the input array. Local prefix sums are stored in the output array.
+b)Prefix Sum Calculation: After the parallel reduction, local sums are stored in an array. A barrier synchronizes all threads. Each thread calculates an offset based on the stored sums and updates the output array with the final prefix sums by adding the offset to each element in parallel.
+ \\
+\section{Results} 
+
+\subsection*{Default Configuration (No Arguments)}
+
+\begin{itemize}
+    \item Algorithm 1 (O(N-1)) Time: 0.00537541 seconds
+    \item Algorithm 2 (O(NlogN)) Time: 0.0128037 seconds
+    \item Algorithm 3 (2(N-1)) Time: 0.00761177 seconds
+\end{itemize}
+
+\subsection*{With 56 OpenMP Threads and 1000 Elements (Seed: 12345)}
+
+\begin{itemize}
+    \item Algorithm 1 (O(N-1)) Time: 1.0667e-05 seconds
+    \item Algorithm 2 (O(NlogN)) Time: 0.0746561 seconds
+    \item Algorithm 3 (2(N-1)) Time: 0.0109013 seconds
+\end{itemize}
+
+\subsection*{With 30 OpenMP Threads}
+
+\begin{itemize}
+    \item Algorithm 1 (O(N-1)) Time: 0.00533108 seconds
+    \item Algorithm 2 (O(NlogN)) Time: 0.0145643 seconds
+    \item Algorithm 3 (2(N-1)) Time: 0.000449938 seconds
+\end{itemize}
+
+\subsection*{With 30 OpenMP Threads and 1000 Elements (Seed: 12345)}
+
+\begin{itemize}
+    \item Algorithm 1 (O(N-1)) Time: 7.12487e-06 seconds
+    \item Algorithm 2 (O(NlogN)) Time: 0.000721148 seconds
+    \item Algorithm 3 (2(N-1)) Time: 3.75738e-05 seconds
+\end{itemize}
+\section{Analysis and Conclusion}The analysis of the parallel prefix sum calculation program yields valuable insights. In the default configuration, Algorithm 1 (O(N-1)) exhibits moderate performance, Algorithm 2 (O(NlogN)) is manageable for the given input size, and Algorithm 3 (2(N-1)) consistently performs well. With the introduction of OpenMP threads, Algorithm 1 benefits from parallelization, especially with increased thread count. Algorithm 2, however, experiences a noticeable rise in time complexity with more threads. In contrast, Algorithm 3 demonstrates robust performance and effective parallelization across different scenarios. Comparatively, Algorithm 3 stands out as the most reliable choice, offering consistent performance and scalability. The impact of thread count varies for each algorithm, with Algorithm 3 showcasing the most favorable outcomes. In conclusion, Algorithm 3 (2(N-1)) is recommended as the preferred choice for parallel prefix sum calculations due to its high performance and scalability.
+
+
+
+\end{document}
+
